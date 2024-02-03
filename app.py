@@ -47,7 +47,7 @@ import numpy as np
 user_prompt = "what is the rating of my portfolio"
 
 # Find the best result with the highest score for both models
-best_result_MM = find_best_result(user_prompt, model_MM, model_HF, categories_data_embeddings_MM_, categories_data_embeddings_hf_)
+best_result_MM = find_best_result(user_prompt, model_MM, categories_data_embeddings_MM_)
 
 # Print the results
 print("Best result from MM model:", best_result_MM)
@@ -69,7 +69,7 @@ def home():
 @app.route('/prompt/<input_text>', methods=['GET'])
 def get_response(input_text):
     # Call your query_engine function with the input_text
-    bot_response = find_best_result(input_text, model_MM, model_HF, categories_data_embeddings_MM_, categories_data_embeddings_hf_)
+    bot_response = find_best_result(input_text, model_MM, categories_data_embeddings_MM_)
 
     # Prepare the response data
     response_data = {
@@ -87,7 +87,7 @@ def get_response(input_text):
 def chat():
     msg = request.form["msg"]
     input = msg
-    bot_response = find_best_result(input, model_MM, model_HF, categories_data_embeddings_MM_, categories_data_embeddings_hf_)
+    bot_response = find_best_result(input, model_MM, categories_data_embeddings_MM_)
 
     return bot_response
 
