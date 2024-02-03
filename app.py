@@ -101,6 +101,7 @@ def chat():
     bot_response = find_best_result(input, model_MM, model_HF, categories_data_embeddings_MM_, categories_data_embeddings_hf_)
 
     return bot_response
-
+if__name__ == "__main__":
+    app.run(debug=False,host='0.0.0.0')
 
 
