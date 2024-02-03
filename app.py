@@ -56,8 +56,14 @@ from flask import Flask
 from pyngrok import ngrok
 from flask import Flask, request,render_template
 import requests
-
 portno = 8000
+from flask import jsonify
+from flask_cors import CORS
+from flask import Flask, request,render_template
+import requests
+from flask import Flask, send_file
+
+
 
 
 app = Flask(__name__)
