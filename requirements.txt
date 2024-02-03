@@ -1,0 +1,5 @@
+sentence-transformers
+google-generativeai
+scikit-learn
+pyngrok
+flask_cors
