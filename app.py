@@ -5,17 +5,6 @@ categories_data = {
     'portfolio_information': 'Details and insights about your investment portfolio',
 }
 
-from sentence_transformers import SentenceTransformer
-
-# Specify the pre-trained model name to be used
-model_HF_name = "Sakil/sentence_similarity_semantic_search"
-
-# Create an instance of the SentenceTransformer model using the specified pre-trained model
-model_HF = SentenceTransformer(model_HF_name)
-
-# Get the values from the 'categories_data' dictionary and convert them to a list
-# Then, encode the list of category values using the SentenceTransformer model and convert the result to a PyTorch tensor
-categories_data_embeddings_hf_ = model_HF.encode(list(categories_data.values()), convert_to_tensor=True)
 
 import google.generativeai as genai
 genai.configure(api_key="AIzaSyARxB1UsrHVl7IiJY0hyhTqiKnHK8qPCBg")
@@ -34,22 +23,22 @@ categories_data_embeddings_MM_ = model_MM(list(categories_data.values()))
 
 
 from sklearn.metrics.pairwise import cosine_similarity
-def find_best_result(user_prompt, embedding_model_MM, embedding_model_hf, categories_data_embeddings_MM, categories_data_embeddings_hf):
+def find_best_result(user_prompt, embedding_model_MM, categories_data_embeddings_MM):
     # Convert user prompt to embedding vector
     user_prompt_embedding_MM = embedding_model_MM([user_prompt])
-    user_prompt_embedding_hf = embedding_model_hf.encode([user_prompt], convert_to_tensor=True)
+
 
     # Calculate cosine similarity with categories data embeddings
     similarity_scores_MM = cosine_similarity(user_prompt_embedding_MM, categories_data_embeddings_MM)
-    #similarity_scores_hf = cosine_similarity(user_prompt_embedding_hf, categories_data_embeddings_hf)
+   
 
     # Find the index of the best result with the highest score for both models
     best_result_index_MM = np.argmax(similarity_scores_MM)
-    #best_result_index_hf = np.argmax(similarity_scores_hf)
+   
 
     # Get the best first result with the highest score for both models
     best_result_MM = list(categories_data.keys())[best_result_index_MM]
-    #best_result_hf = list(categories_data.keys())[best_result_index_hf]
+   
 
     return best_result_MM
 
@@ -101,7 +90,6 @@ def chat():
     bot_response = find_best_result(input, model_MM, model_HF, categories_data_embeddings_MM_, categories_data_embeddings_hf_)
 
     return bot_response
-if__name__ == "__main__":
-    app.run(debug=False,host='0.0.0.0')
+
 
 
