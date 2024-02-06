@@ -1,5 +1,5 @@
 categories_data = {
-    'financial_news': 'Latest news and updates related to finance and the financial markets',
+    'financial_news': 'Latest news and updates related to finance and the financial markets like Stock market rallies as tech giants post strong earnings, Federal Reserve announces interest rate hike, Cryptocurrency prices surge amid market volatility, Investors react to the latest economic indicators, Global economic outlook for the next quarter',
     'other': 'General information not specific to finance',
     'stock_data': 'Real-time data and statistics about stocks and financial instruments',
     'portfolio_information': 'Details and insights about your investment portfolio',
