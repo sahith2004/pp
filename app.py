@@ -1,8 +1,8 @@
 categories_data = {
     'financial_news': 'Latest news and updates related to finance and the financial markets like Stock market rallies as tech giants post strong earnings, Federal Reserve announces interest rate hike, Cryptocurrency prices surge amid market volatility, Investors react to the latest economic indicators, Global economic outlook for the next quarter',
-    'other': 'General information not specific to finance',
-    'stock_data': 'Real-time data and statistics about stocks and financial instruments',
-    'portfolio_information': 'Details and insights about your investment portfolio',
+    'other': 'General information not specific to finance like travel,entertainment,sports,abusive,weather forecast,...etc ',
+    'stock_data': 'Real-time data and statistics about stocks and financial instruments real time update of nse,bse stocks',
+    'portfolio_information': 'Details and insights about your investment portfolio like Diversification strategies for a balanced investment portfolio,Performance review of your stock holdings,Asset allocation recommendations based on risk tolerance,Overview of your current investment positions,Dividend income projections for the next quarter',
 }
 
 
