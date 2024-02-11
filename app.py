@@ -1,69 +1,85 @@
-categories_data = {
-    'financial_news': 'Latest news and updates related to finance and the financial markets like Stock market rallies as tech giants post strong earnings, Federal Reserve announces interest rate hike, Cryptocurrency prices surge amid market volatility, Investors react to the latest economic indicators, Global economic outlook for the next quarter',
-    'other': 'General information not specific to finance like travel,entertainment,sports,abusive,weather forecast,...etc ',
-    'stock_data': 'Real-time data and statistics about stocks and financial instruments real time update of nse,bse stocks',
-    'portfolio_information': 'Details and insights about your investment portfolio like Diversification strategies for a balanced investment portfolio,Performance review of your stock holdings,Asset allocation recommendations based on risk tolerance,Overview of your current investment positions,Dividend income projections for the next quarter',
-}
 
 
+from PyPDF2 import PdfReader
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+import os
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 import google.generativeai as genai
-genai.configure(api_key="AIzaSyARxB1UsrHVl7IiJY0hyhTqiKnHK8qPCBg")
-
-# Define a function to calculate the embeddings of the input text
-def model_MM(input_text):
-    categories_data_embeddings_MM_ = genai.embed_content(
-        model="models/embedding-001",
-        content=input_text,
-        task_type="retrieval_document",
-        title="Embedding of inputs")
-    return categories_data_embeddings_MM_['embedding']
-
-# calculate embedding of sentence2 and categories_data
-categories_data_embeddings_MM_ = model_MM(list(categories_data.values()))
+from langchain.vectorstores import FAISS
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain.chains.question_answering import load_qa_chain
+from langchain.prompts import PromptTemplate
 
 
-from sklearn.metrics.pairwise import cosine_similarity
-def find_best_result(user_prompt, embedding_model_MM, categories_data_embeddings_MM):
-    # Convert user prompt to embedding vector
-    user_prompt_embedding_MM = embedding_model_MM([user_prompt])
+import os
+
+# Set your Google API key as an environment variable
+os.environ['GOOGLE_API_KEY'] = 'AIzaSyARxB1UsrHVl7IiJY0hyhTqiKnHK8qPCBg'
+genai.configure(api_key='AIzaSyARxB1UsrHVl7IiJY0hyhTqiKnHK8qPCBg')
 
 
-    # Calculate cosine similarity with categories data embeddings
-    similarity_scores_MM = cosine_similarity(user_prompt_embedding_MM, categories_data_embeddings_MM)
-   
+with open('converted_text.txt', 'r') as text_file:
+    # Read the content of the file
+    text_content = text_file.read()
 
-    # Find the index of the best result with the highest score for both models
-    best_result_index_MM = np.argmax(similarity_scores_MM)
-   
+def get_text_chunks(text):
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=10000, chunk_overlap=1000)
+    chunks = text_splitter.split_text(text)
+    return chunks
 
-    # Get the best first result with the highest score for both models
-    best_result_MM = list(categories_data.keys())[best_result_index_MM]
-   
 
-    return best_result_MM
+def get_vector_store(text_chunks):
+    embeddings = GoogleGenerativeAIEmbeddings(model = "models/embedding-001")
+    vector_store = FAISS.from_texts(text_chunks, embedding=embeddings)
+    vector_store.save_local("faiss_index")
 
-import numpy as np
-# User prompt
-user_prompt = "what is the rating of my portfolio"
 
-# Find the best result with the highest score for both models
-best_result_MM = find_best_result(user_prompt, model_MM, categories_data_embeddings_MM_)
+def get_conversational_chain():
 
-# Print the results
-print("Best result from MM model:", best_result_MM)
+    prompt_template = """
+    Answer the question as detailed as possible from the provided context, make sure to provide all the details, if the answer is not in
+    provided context just say, "answer is not available in the context", don't provide the wrong answer\n\n
+    Context:\n {context}?\n
+    Question: \n{question}\n
+
+    Answer:
+    """
+
+    model = ChatGoogleGenerativeAI(model="gemini-pro",
+                             temperature=0.3)
+
+    prompt = PromptTemplate(template = prompt_template, input_variables = ["context", "question"])
+    chain = load_qa_chain(model, chain_type="stuff", prompt=prompt)
+
+    return chain
+
+def user_input(user_question):
+    embeddings = GoogleGenerativeAIEmbeddings(model = "models/embedding-001")
+    
+    new_db = FAISS.load_local("faiss_index", embeddings)
+    docs = new_db.similarity_search(user_question)
+
+    chain = get_conversational_chain()
+
+    
+    response = chain(
+        {"input_documents":docs, "question": user_question}
+        , return_only_outputs=True)
+
+    return response
+    
+raw_text = text_content
+text_chunks = get_text_chunks(raw_text)
+get_vector_store(text_chunks)
+
+
 
 from flask import Flask
 from pyngrok import ngrok
 from flask import Flask, request,render_template
 import requests
+
 portno = 8000
-from flask import jsonify
-from flask_cors import CORS
-from flask import Flask, request,render_template
-import requests
-from flask import Flask, send_file
-
-
 
 
 app = Flask(__name__)
@@ -75,8 +91,7 @@ def home():
 @app.route('/prompt/<input_text>', methods=['GET'])
 def get_response(input_text):
     # Call your query_engine function with the input_text
-    bot_response = find_best_result(input_text, model_MM, categories_data_embeddings_MM_)
-
+    bot_response = user_input(input_text)['output_text']
     # Prepare the response data
     response_data = {
         'messages': [
@@ -93,7 +108,7 @@ def get_response(input_text):
 def chat():
     msg = request.form["msg"]
     input = msg
-    bot_response = find_best_result(input, model_MM, categories_data_embeddings_MM_)
+    bot_response = user_input(input)['output_text']
 
     return bot_response
 
