@@ -72,7 +72,7 @@ def user_input(user_question):
 
     return response
     
-raw_text = complete_text_content
+raw_text = complete_content
 text_chunks = get_text_chunks(raw_text)
 get_vector_store(text_chunks)
 
