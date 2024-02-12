@@ -17,11 +17,15 @@ import os
 os.environ['GOOGLE_API_KEY'] = 'AIzaSyARxB1UsrHVl7IiJY0hyhTqiKnHK8qPCBg'
 genai.configure(api_key='AIzaSyARxB1UsrHVl7IiJY0hyhTqiKnHK8qPCBg')
 
-
+complete_content = ' '
 with open('converted_text.txt', 'r') as text_file:
     # Read the content of the file
     text_content = text_file.read()
-
+    complete_content+= " "+text_content
+with open('terms.txt', 'r') as text_file:
+    # Read the content of the file
+    f_text_content = text_file.read()
+    complete_content+= " "+f_text_content
 def get_text_chunks(text):
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=10000, chunk_overlap=1000)
     chunks = text_splitter.split_text(text)
@@ -68,7 +72,7 @@ def user_input(user_question):
 
     return response
     
-raw_text = text_content
+raw_text = complete_text_content
 text_chunks = get_text_chunks(raw_text)
 get_vector_store(text_chunks)
 
