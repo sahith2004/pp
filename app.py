@@ -41,7 +41,7 @@ def get_conversational_chain():
 
     prompt_template = """
     You are a Q&A assistant. 
-    Context:\n {context}?\n
+    
     Question: \n{question}\n
 
     Answer:
