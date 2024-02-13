@@ -41,6 +41,7 @@ def get_conversational_chain():
 
     prompt_template = """
     You are a Q&A assistant. Your goal is to answer questions related to finance and take help of the context provided if the question is out of finance domain say sorry I am a financial assitant I cannot answer these questions.
+    Finance domain are the questions which has the keywords that are present in the context provided. You need to answer on your knowledge as well as the context provided to you.
     Context:\n {context}?\n
     Question: \n{question}\n
 
