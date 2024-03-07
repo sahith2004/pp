@@ -1,101 +1,90 @@
+import transformers
+import torch
+from torch import cuda,bfloat16
 
+model_id = 'PlusCash/TinyLlama-pluscash-finance-chat-v0.1'
 
-from PyPDF2 import PdfReader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-import os
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
-import google.generativeai as genai
-from langchain.vectorstores import FAISS
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.chains.question_answering import load_qa_chain
-from langchain.prompts import PromptTemplate
+device = f'cuda:{cuda.current_device()}' if cuda.is_available() else 'cpu'
 
+bnb_config = transformers.BitsAndBytesConfig(
+    load_in_4bit=True,
+    bnb_4bit_quant_type='nf4',
+    bnb_4bit_use_double_quant=True,
+    bnb_4bit_compute_dtype=bfloat16
+)
 
-import os
+# begin initializing HF items, need auth token for these
+hf_auth = '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'
+model_config = transformers.AutoConfig.from_pretrained(
+    model_id,
+    use_auth_token=hf_auth
+)
 
-# Set your Google API key as an environment variable
-os.environ['GOOGLE_API_KEY'] = 'AIzaSyARxB1UsrHVl7IiJY0hyhTqiKnHK8qPCBg'
-genai.configure(api_key='AIzaSyARxB1UsrHVl7IiJY0hyhTqiKnHK8qPCBg')
+model = transformers.AutoModelForCausalLM.from_pretrained(
+    model_id,
+    trust_remote_code=True,
+    config=model_config,
+    quantization_config=bnb_config,
+    device_map='auto',
+    use_auth_token=hf_auth
+)
+model.eval()
+tokenizer = transformers.AutoTokenizer.from_pretrained(
+    model_id,
+    use_auth_token=hf_auth
+)
+generate_text = transformers.pipeline(
+    model=model, tokenizer=tokenizer,
+    return_full_text=True,  # langchain expects the full text
+    task='text-generation',
+    # we pass model parameters here too
+    temperature=0.4,  # 'randomness' of outputs, 0.0 is the min and 1.0 the max
+    max_new_tokens=128,  # mex number of tokens to generate in the output
+    repetition_penalty=1.1  # without this output begins repeating
+)
 
-with open('converted_text.txt', 'r') as text_file:
-    # Read the content of the file
-    text_content = text_file.read()
-    
-with open('terms.txt', 'r') as text_file:
-    # Read the content of the file
-    f_text_content = text_file.read()
-    
-def get_text_chunks(text):
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=10000, chunk_overlap=1000)
-    chunks = text_splitter.split_text(text)
-    return chunks
+prompt = "How mutual funds works?"
+prompt_template=f'''[INST] <<SYS>>
+You are a helpful, respectful and honest financial assistant.Your name is Finark personal assistant. Always answer as helpfully as possible, while being safe.  Your answers should not include any harmful, unethical, racist, sexist, toxic, dangerous, or illegal content. Please ensure that your responses are socially unbiased and positive in nature. If a question does not make any sense, or is not factually coherent, explain why instead of answering something not correct. If you don't know the answer to a question, please don't share false information. Only answer the questions which are related to finance never ever answer questions regarding entertainement,sports,...etc which are out of finance domain.Also Only answer about the Indian stock market information and Indian mutual funds and tax information.
+Only answer to the Questions with Keeping Indian context and Indian financial markets as context.
+<</SYS>>
+{prompt}[/INST]'''
 
+from transformers import pipeline
 
-def get_vector_store(text_chunks):
-    embeddings = GoogleGenerativeAIEmbeddings(model = "models/embedding-001")
-    vector_store = FAISS.from_texts(text_chunks, embedding=embeddings)
-    vector_store.save_local("faiss_index")
+summarizer = pipeline("summarization", model="Falconsai/text_summarization")
 
+from transformers import pipeline
+pipe = pipeline(
+    "text-generation",
+    model=model,
+    tokenizer=tokenizer,
+    max_new_tokens=256,
+    do_sample=True,
+    temperature=0.2,
+    top_p=0.95,
+    top_k=40,
+    repetition_penalty=1.1
+)
 
-def get_conversational_chain():
-
-    prompt_template = """
-    You are a Q&A assistant. 
-    
-    Question: \n{question}\n
-
-    Answer:
-    """
-
-    model = ChatGoogleGenerativeAI(model="gemini-pro",
-                             temperature=0.3)
-
-    prompt = PromptTemplate(template = prompt_template, input_variables = ["context", "question"])
-    chain = load_qa_chain(model, chain_type="stuff", prompt=prompt)
-
-    return chain
-
-def user_input(user_question):
-    embeddings = GoogleGenerativeAIEmbeddings(model = "models/embedding-001")
-    
-    new_db = FAISS.load_local("faiss_index", embeddings)
-    docs = new_db.similarity_search(user_question)
-
-    chain = get_conversational_chain()
-
-    
-    response = chain(
-        {"input_documents":docs, "question": user_question}
-        , return_only_outputs=True)
-
-    return response
-    
-raw_text = text_content + f_text_content
-text_chunks = get_text_chunks(raw_text)
-get_vector_store(text_chunks)
-
-
+import locale
+locale.getpreferredencoding = lambda: "UTF-8"
 
 from flask import Flask
 from pyngrok import ngrok
-from flask import Flask, request,render_template
-import requests
-from flask import Flask
-from pyngrok import ngrok
-from flask import Flask, request,render_template
-import requests
+
 portno = 8000
+
 from flask import jsonify
 from flask_cors import CORS
-from flask import Flask, request,render_template
+
 import requests
-from flask import Flask, send_file
-
-portno = 8000
-
-
+from flask import Flask, request,render_template
 app = Flask(__name__)
 CORS(app)
+
+ngrok.set_auth_token('2ZGr4Gf5m7wNAUvDwHdgdSSZJPX_4mGbGzSCpfAFuc7fPpGGi')
+public_url = ngrok.connect(portno).public_url
 
 @app.route("/")
 def home():
@@ -103,14 +92,22 @@ def home():
 @app.route('/prompt/<input_text>', methods=['GET'])
 def get_response(input_text):
     # Call your query_engine function with the input_text
-    bot_response = user_input(input_text)['output_text']
+    prompt_template=f'''[INST] <<SYS>>
+     You are a helpful, respectful and honest financial assistant.Your name is Finark personal assistant. Always answer as helpfully as possible, while being safe.  Your answers should not include any harmful, unethical, racist, sexist, toxic, dangerous, or illegal content. Please ensure that your responses are socially unbiased and positive in nature. If a question does not make any sense, or is not factually coherent, explain why instead of answering something not correct. If you don't know the answer to a question, please don't share false information. Only answer the questions which are related to finance never ever answer questions regarding entertainement,sports,...etc which are out of finance domain.Always answer with Indian context.Be careful If somebody asks about any question try to answer only with respect to Indian markets and Indian financial rules and regulations.
+     <</SYS>>
+     {input_text}[/INST]'''
+    print(input_text)
+    result = summarizer(pipe(prompt_template)[0]['generated_text'][len(prompt_template):], max_length=500, min_length=30, do_sample=False)
+
+    bot_response = result[0]['summary_text']
+    print(bot_response)
     # Prepare the response data
     response_data = {
         'messages': [
             {'content': input_text}
         ],
         'candidates': [
-            {'content': bot_response}
+            {'content': bot_response+"I am a finark assistant I "}
         ]
     }
 
@@ -120,9 +117,19 @@ def get_response(input_text):
 def chat():
     msg = request.form["msg"]
     input = msg
-    bot_response = user_input(input)['output_text']
-
+    prompt_template=f'''[INST] <<SYS>>
+     You are a helpful, respectful and honest financial assistant.Your name is Finark personal assistant. Always answer as helpfully as possible, while being safe.  Your answers should not include any harmful, unethical, racist, sexist, toxic, dangerous, or illegal content. Please ensure that your responses are socially unbiased and positive in nature. If a question does not make any sense, or is not factually coherent, explain why instead of answering something not correct. 
+     <</SYS>>
+     {input}[/INST]'''
+    print(input)
+    result = summarizer(pipe(prompt_template)[0]['generated_text'][len(prompt_template):], max_length=100, min_length=30, do_sample=False)
+    bot_response = result[0]['summary_text']
+    print(bot_response)
     return bot_response
 
+
+
+print(f"to access go to {public_url}")
+app.run(port=portno)
 
 
