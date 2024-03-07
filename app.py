@@ -129,7 +129,5 @@ def chat():
 
 
 
-print(f"to access go to {public_url}")
-app.run(port=portno)
 
 
