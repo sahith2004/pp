@@ -1,6 +1,8 @@
 langchain
 accelerate 
 bitsandbytes
+transformers
+torch
 pyngrok
 flask_cors
 python-dotenv
