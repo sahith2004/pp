@@ -1,11 +1,8 @@
 langchain
-google-generativeai
+accelerate 
+bitsandbytes
 pyngrok
 flask_cors
 python-dotenv
 langchain
-PyPDF2
-chromadb
-faiss-cpu
-langchain_google_genai
 gunicorn
